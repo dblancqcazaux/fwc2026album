@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="WC26 Stickers">
+<title>WC 2026 Sticker Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f2f2f7; color: #1c1c1e; min-height: 100vh; }
+  .app { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
+  .header { background: #fff; padding: 16px 16px 0; box-shadow: none; }
+  .header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .header h1 { font-size: 20px; font-weight: 700; flex: 1; }
+  .reset-btn { font-size: 13px; color: #ff3b30; background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+  .reset-btn:active { background: #fff0ef; }
+  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 16px 14px; background: #fff; }
+  .stat { background: #f2f2f7; border-radius: 10px; padding: 8px 6px; text-align: center; }
+  .stat-label { font-size: 10px; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+  .stat-value { font-size: 20px; font-weight: 700; }
+  .stat-value.green { color: #34c759; }
+  .stat-value.red { color: #ff3b30; }
+  .stat-value.blue { color: #007aff; }
+  .progress-wrap { background: #fff; padding: 0 16px 12px; }
+  .progress-bar { height: 6px; background: #e5e5ea; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #34c759, #30d158); border-radius: 3px; transition: width 0.4s ease; }
+  .progress-label { font-size: 11px; color: #8e8e93; text-align: right; margin-top: 4px; }
+  .tab-bar { display: flex; background: #fff; border-bottom: 0.5px solid rgba(0,0,0,0.12); padding: 0 8px; position: sticky; top: 0; z-index: 40; }
+  .tab { flex: 1; padding: 10px 4px; font-size: 13px; font-weight: 500; color: #8e8e93; border: none; background: none; cursor: pointer; border-bottom: 2.5px solid transparent; transition: all 0.15s; }
+  .tab.active { color: #007aff; border-bottom-color: #007aff; }
+  .search-wrap { padding: 10px 16px; background: #f2f2f7; display: flex; gap: 8px; }
+  .search-wrap input { flex: 1; padding: 8px 12px; border-radius: 10px; border: none; background: #fff; font-size: 15px; color: #1c1c1e; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.12); outline: none; }
+  .search-wrap input:focus { box-shadow: 0 0 0 2px #007aff; }
+  .search-wrap select { padding: 8px 10px; border-radius: 10px; border: none; background: #fff; font-size: 14px; color: #1c1c1e; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.12); outline: none; cursor: pointer; }
+  .album-content { padding: 12px 16px; }
+  .group-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: #1c1c1e; border-radius: 6px; padding: 3px 8px; display: inline-block; margin-bottom: 10px; }
+  .country-block { margin-bottom: 22px; }
+  .country-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .country-name { font-size: 15px; font-weight: 600; flex: 1; }
+  .country-progress { font-size: 12px; color: #8e8e93; }
+  .sticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 5px; }
+  .sticker { border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); background: #fff; padding: 6px 3px 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; transition: transform 0.1s; position: relative; user-select: none; -webkit-user-select: none; }
+  .sticker:active { transform: scale(0.94); }
+  .sticker .num { font-size: 10px; font-weight: 600; color: #8e8e93; }
+  .sticker .sflag { font-size: 17px; line-height: 1.1; height: 20px; display: flex; align-items: center; justify-content: center; }
+  .sticker .sflag-text { font-size: 11px; font-weight: 700; color: #1c1c1e; }
+  .sticker.collected { background: #f0fff4; border-color: #34c759; }
+  .sticker.collected .num { color: #248a3d; }
+  .sticker .check-icon { position: absolute; top: 2px; right: 3px; font-size: 9px; color: #34c759; display: none; font-weight: 700; }
+  .sticker.collected .check-icon { display: block; }
+  .sticker.pending { background: #e8f4ff; border-color: #007aff; }
+  .sticker.pending .num { color: #0051a8; }
+  .sticker .pending-icon { position: absolute; top: 2px; right: 3px; font-size: 9px; color: #007aff; display: none; font-weight: 700; }
+  .sticker.pending .pending-icon { display: block; }
+  .sticker .stock-badge { position: absolute; top: 2px; left: 3px; font-size: 8px; font-weight: 700; background: #007aff; color: #fff; border-radius: 4px; padding: 1px 3px; display: none; }
+  .sticker.has-stock .stock-badge { display: block; }
+  .group-divider { height: 1px; background: #e5e5ea; margin: 4px 0 16px; }
+  .missing-content { padding: 12px 16px; }
+  .stock-content { padding: 12px 16px; }
+  .stock-summary { font-size: 13px; color: #8e8e93; margin-bottom: 12px; }
+  .stock-list { display: flex; flex-direction: column; gap: 6px; }
+  .stock-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-radius: 12px; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.08); }
+  .stock-flag { font-size: 22px; }
+  .stock-info { flex: 1; }
+  .stock-info strong { font-size: 14px; font-weight: 600; display: block; }
+  .stock-info span { font-size: 12px; color: #8e8e93; }
+  .stock-qty { font-size: 18px; font-weight: 700; color: #007aff; min-width: 28px; text-align: center; }
+  .stock-btns { display: flex; gap: 6px; }
+  .stock-btns button { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #e5e5ea; background: #f2f2f7; font-size: 18px; font-weight: 300; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1c1c1e; line-height: 1; }
+  .stock-btns button:active { background: #e5e5ea; }
+  .empty-state { text-align: center; padding: 48px 20px; color: #8e8e93; font-size: 15px; }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 200; }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: #fff; border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; max-width: 600px; }
+  .modal-handle { width: 36px; height: 4px; background: #e5e5ea; border-radius: 2px; margin: 0 auto 16px; }
+  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .modal-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid #f2f2f7; }
+  .modal-row label { font-size: 16px; color: #1c1c1e; }
+  .toggle { position: relative; width: 51px; height: 31px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #e5e5ea; border-radius: 999px; cursor: pointer; transition: background 0.2s; }
+  .toggle-slider:before { content:''; position: absolute; width: 27px; height: 27px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .toggle input:checked + .toggle-slider { background: #34c759; }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+  .stepper { display: flex; align-items: center; gap: 12px; }
+  .stepper button { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #e5e5ea; background: #f2f2f7; font-size: 20px; font-weight: 300; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #007aff; }
+  .stepper button:active { background: #dce8ff; }
+  .stepper span { font-size: 20px; font-weight: 600; min-width: 28px; text-align: center; }
+  .modal-save { width: 100%; margin-top: 20px; padding: 14px; background: #007aff; color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 600; cursor: pointer; }
+  .modal-save:active { background: #0062cc; }
+  .install-banner { background: #007aff; color: #fff; padding: 10px 16px; font-size: 13px; text-align: center; display: none; }
+  .install-banner.show { display: block; }
+</style>
+</head>
+<body>
+
+<div id="install-banner" class="install-banner">
+  📱 Add to Home Screen: tap Share → "Add to Home Screen" to use as an app
+</div>
+
+<!-- First-time tips modal -->
+<div id="tips-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;justify-content:center;">
+  <div style="background:#fff;border-radius:20px 20px 0 0;padding:20px 20px 40px;width:100%;max-width:600px;">
+    <div style="width:36px;height:4px;background:#e5e5ea;border-radius:2px;margin:0 auto 16px;"></div>
+    <div style="font-size:17px;font-weight:700;color:#1c1c1e;margin-bottom:4px;">👋 Welcome to FWC 2026 Album</div>
+    <div style="font-size:13px;color:#8e8e93;margin-bottom:14px;">A few tips to keep your progress safe:</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;">📱</span>
+        <div><div style="font-size:13px;font-weight:600;color:#1c1c1e;">Add to Home Screen</div><div style="font-size:12px;color:#8e8e93;margin-top:2px;">On iPhone: tap Share → "Add to Home Screen". Always open the app from there to keep your data.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;">📋</span>
+        <div><div style="font-size:13px;font-weight:600;color:#1c1c1e;">Back up regularly</div><div style="font-size:12px;color:#8e8e93;margin-top:2px;">Tap 📋 in the top right to copy your data. Paste it into Notes or email it to yourself — especially after a big trading session.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;">↩</span>
+        <div><div style="font-size:13px;font-weight:600;color:#1c1c1e;">Restore anytime</div><div style="font-size:12px;color:#8e8e93;margin-top:2px;">If you ever lose your progress, tap ↩ and paste your saved backup to restore everything instantly.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;">📦</span>
+        <div><div style="font-size:13px;font-weight:600;color:#1c1c1e;">Track your duplicates</div><div style="font-size:12px;color:#8e8e93;margin-top:2px;">Got extra stickers? Add them in the Inv tab using + / −. This powers the Trades tab so friends can see what you have to offer.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;">⚠️</span>
+        <div><div style="font-size:13px;font-weight:600;color:#1c1c1e;">Don't clear your browser</div><div style="font-size:12px;color:#8e8e93;margin-top:2px;">Your data lives in this browser/device. Clearing browser cache or switching browsers will erase it — that's why backups matter.</div></div>
+      </div>
+    </div>
+    <button onclick="dismissTips()" style="width:100%;padding:14px;background:#007aff;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;">Got it, let's go!</button>
+  </div>
+</div>
+
+<div class="app">
+  <div style="position:sticky;top:0;z-index:50;background:#fff;box-shadow:0 0.5px 0 rgba(0,0,0,0.15);">
+  <div class="header">
+    <div class="header-top">
+      <h1>FWC 2026 Album</h1>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <button onclick="emailBackup()" style="font-size:16px;color:#007aff;background:none;border:none;cursor:pointer;padding:6px 8px;" title="Email backup">✉</button>
+        <button onclick="copyBackup()" style="font-size:16px;color:#007aff;background:none;border:none;cursor:pointer;padding:6px 8px;" title="Copy backup">📋</button>
+        <button onclick="toggleRestore()" style="font-size:16px;color:#8e8e93;background:none;border:none;cursor:pointer;padding:6px 8px;" title="Restore backup">↩</button>
+        <button onclick="copySiteLink()" style="font-size:13px;font-weight:600;color:#fff;background:#34c759;border:none;border-radius:8px;cursor:pointer;padding:6px 12px;">Link</button>
+        <button onclick="showResetConfirm()" style="font-size:13px;font-weight:600;color:#fff;background:#ff3b30;border:none;border-radius:8px;cursor:pointer;padding:6px 12px;">Reset</button>
+      </div>
+    </div>
+    <div id="restore-wrap" style="padding:0 16px 10px;display:none;">
+      <textarea id="restore-input" placeholder="Paste backup JSON here…" style="width:100%;height:72px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.2);padding:8px;font-size:12px;font-family:monospace;resize:none;"></textarea>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button onclick="restoreBackup()" style="flex:1;padding:8px;border-radius:10px;border:none;background:#34c759;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Restore</button>
+        <button onclick="toggleRestore()" style="flex:1;padding:8px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.12);background:#fff;font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-label">Collected</div><div class="stat-value green" id="stat-collected">0</div></div>
+      <div class="stat"><div class="stat-label">Missing</div><div class="stat-value red" id="stat-missing">0</div></div>
+      <div class="stat"><div class="stat-label">Total</div><div class="stat-value" id="stat-total">0</div></div>
+      <div class="stat"><div class="stat-label">Stock</div><div class="stat-value blue" id="stat-stock">0</div></div>
+      <div class="stat" style="grid-column:1/-1"><div class="stat-label">Complete teams</div><div class="stat-value" style="color:#007aff" id="stat-complete-teams">0 / 0</div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-label" id="progress-label">0% complete</div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('album')">Album</button>
+    <button class="tab" onclick="showTab('analytics')">Stats</button>
+    <button class="tab" onclick="showTab('trades')">Trades</button>
+    <button class="tab" onclick="showTab('stock')">Inventory</button>
+  </div>
+  </div>
+
+  <div id="view-analytics" style="display:none">
+    <div class="search-wrap">
+      <input type="text" id="analytics-search" placeholder="Search team or group…" oninput="if(!this.value) expandedTeam=null; renderAnalytics()">
+    </div>
+    <div style="display:flex;gap:0;margin:0 16px 12px;border:0.5px solid rgba(0,0,0,0.12);border-radius:10px;overflow:hidden;">
+      <button id="stats-tab-missing" onclick="setStatsView('missing')" style="flex:1;padding:8px;font-size:12px;font-weight:600;border:none;background:#1c1c1e;color:#fff;cursor:pointer;">Missing</button>
+      <button id="stats-tab-stock" onclick="setStatsView('stock')" style="flex:1;padding:8px;font-size:12px;font-weight:600;border:none;background:#fff;color:#8e8e93;cursor:pointer;">In Stock</button>
+      <button id="stats-tab-duplicates" onclick="setStatsView('duplicates')" style="flex:1;padding:8px;font-size:12px;font-weight:600;border:none;background:#fff;color:#8e8e93;cursor:pointer;">Dupl.</button>
+      <button id="stats-tab-groups" onclick="setStatsView('groups')" style="flex:1;padding:8px;font-size:12px;font-weight:600;border:none;background:#fff;color:#8e8e93;cursor:pointer;">Groups</button>
+    </div>
+    <div style="padding:0 16px 12px" id="analytics-content"></div>
+  </div>
+  <div id="view-album">
+    <div style="padding:8px 16px 4px;">
+      <button onclick="toggleAlbumTips()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#fff9e6;border:1px solid #ffd60a;border-radius:10px;font-size:13px;font-weight:600;color:#1c1c1e;cursor:pointer;">
+        <span>💡 Tips &amp; best practices</span>
+        <span id="tips-arrow" style="color:#8e8e93;font-size:12px;">▼</span>
+      </button>
+      <div id="album-tips" style="display:none;background:#fff9e6;border:1px solid #ffd60a;border-radius:10px;margin-top:6px;padding:12px 14px;font-size:13px;color:#3c3c43;line-height:1.7;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 12px;font-size:13px;color:#856404;">
+            <strong>⚠️ Important:</strong> If you switch browsers, clear your browser cache, or use a private/incognito window, <strong>all your progress will be lost</strong>. Always back up using 📋 or ✉ before doing so.
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">📱</span>
+            <div><strong>Add to Home Screen</strong> — On iPhone tap Share → "Add to Home Screen". Always open from there to keep your data saved.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">📋</span>
+            <div><strong>Back up regularly</strong> — Tap 📋 to copy your data or ✉ to email it to yourself. Do this after a big trading or collecting session so you never lose your progress.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">↩</span>
+            <div><strong>Restore anytime</strong> — Lost your progress? Tap ↩ and paste your saved backup to get everything back instantly.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">📖</span>
+            <div>
+              <strong>Using the Album tab</strong>
+              <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+                <div>• <strong>Tap once</strong> → sticker turns <span style="color:#248a3d;font-weight:600;">green ✓</span> — you have it</div>
+                <div>• <strong>Tap again</strong> → turns <span style="color:#0051a8;font-weight:600;">blue 🤝</span> — a friend has it for you</div>
+                <div>• <strong>Tap once more</strong> → back to white — uncollected</div>
+                <div style="margin-top:6px;">• <strong>Press &amp; hold</strong> a white sticker to open the trade screen — perfect for <strong>in-person trading</strong>. When someone offers you a sticker you need, hold it, search and select which of your duplicates you're giving them in exchange, and confirm. The sticker marks itself as collected and your stock updates instantly — no manual steps needed.</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">🤝</span>
+            <div>
+              <strong>Using the Trades tab</strong>
+              <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+                <div>• Add friends by pasting their 📋 backup JSON</div>
+                <div>• The app automatically shows <span style="color:#34c759;font-weight:600;">what they have for you 🟢</span> and <span style="color:#007aff;font-weight:600;">what you have for them 🔵</span></div>
+                <div>• Update a friend's data anytime with ✏️ when they collect new stickers</div>
+                <div>• Works over WhatsApp, iMessage, email — no live connection needed</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">📦</span>
+            <div><strong>Inventory tab</strong> — Track your duplicate stickers here. Use + / − to manage quantities. The Trades tab uses this to show friends what you can offer them.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <input type="text" id="search-input" placeholder="Search sticker or country…" oninput="renderAlbum()">
+      <select id="filter-select" onchange="renderAlbum()">
+        <option value="all">All</option>
+        <option value="missing">Missing</option>
+        <option value="collected">Collected</option>
+        <option value="green">Green ✓</option>
+        <option value="blue">Blue 🤝</option>
+      </select>
+    </div>
+    <div id="album-filter-counts" style="display:flex;gap:8px;padding:0 16px 10px;"></div>
+    <div class="album-content" id="album-content"></div>
+  </div>
+  <div id="view-stock" style="display:none">
+    <div style="padding:8px 16px 4px;">
+      <button onclick="toggleInvTips()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f0fff4;border:1px solid #34c759;border-radius:10px;font-size:13px;font-weight:600;color:#1c1c1e;cursor:pointer;">
+        <span>📦 How to use the Inventory tab</span>
+        <span id="inv-tips-arrow" style="color:#8e8e93;font-size:12px;">▼</span>
+      </button>
+      <div id="inv-tips" style="display:none;background:#f0fff4;border:1px solid #34c759;border-radius:10px;margin-top:6px;padding:12px 14px;font-size:13px;color:#3c3c43;line-height:1.7;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">📦</span>
+            <div><strong>What is the Inventory tab?</strong> — This is where you track your duplicate stickers — the ones you have more than one copy of and are willing to trade away.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">➕</span>
+            <div><strong>Adding duplicates</strong> — Use the <strong>+</strong> button on any sticker to add a copy to your inventory. Use <strong>−</strong> to remove one when you've traded it away.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">🔵</span>
+            <div><strong>Blue badge</strong> — The blue number on each sticker shows how many copies you have available to trade.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">🤝</span>
+            <div><strong>Used in trades</strong> — The Trades tab uses your inventory to show friends what you can offer them. Keep it updated for accurate trade matches!</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;">👆</span>
+            <div><strong>Quick trade</strong> — In the Album tab, press & hold a missing sticker to open the trade screen. It pulls directly from your inventory so you can pick what to give away on the spot.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <input type="text" id="stock-search" placeholder="Search sticker or country…" oninput="renderStock()">
+    </div>
+    <div class="stock-content" id="stock-content"></div>
+  </div>
+  <div id="view-trades" style="display:none">
+    <div style="padding:12px 16px 0;">
+      <div style="margin-bottom:12px;">
+        <button onclick="toggleTradeTips()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#e8f4ff;border:1px solid #b3d4ff;border-radius:10px;font-size:13px;font-weight:600;color:#0051a8;cursor:pointer;">
+          <span>📋 How to trade with a friend</span>
+          <span id="trade-tips-arrow" style="color:#4a90d9;font-size:12px;">▼</span>
+        </button>
+        <div id="trade-tips" style="display:none;background:#e8f4ff;border:1px solid #b3d4ff;border-radius:10px;margin-top:6px;padding:14px;font-size:13px;color:#1c1c1e;line-height:1.7;">
+          <div style="margin-bottom:10px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 12px;font-size:12px;color:#856404;">
+            <strong>⚠️ Keep it fresh:</strong> Ask friends to send you a new backup after they collect new stickers — the comparison is only as accurate as the last backup they shared. They can use <strong>📋</strong> to copy or <strong>✉</strong> to email it directly to you.
+          </div>
+          <div style="font-size:12px;color:#4a90d9;margin-bottom:10px;line-height:1.5;">This is not a live platform — there's no account or chat. Think of it as a smart comparison tool: you each keep your own copy of the app, share a snapshot of your data, and the app figures out who has what for whom.</div>
+          <ol style="font-size:13px;color:#1c1c1e;line-height:1.9;padding-left:18px;margin:0;">
+            <li>Share the app link with your friend so they can track their own album</li>
+            <li>When ready to compare, ask them to tap <strong>📋</strong> to copy or <strong>✉</strong> to email you their backup. It works both ways — share your own backup with them too so they can add you on their end.</li>
+            <li>Tap <strong>+ Add Friend</strong> below, enter their name and paste their text</li>
+            <li>The app instantly shows what they can give you 🟢 and what you can give them 🔵</li>
+            <li>Agree on the swap and update your albums accordingly</li>
+            <li>Tap <strong>📱</strong> on a friend's card anytime to send them a text reminder to share their latest backup — keeps the comparison fresh as you both collect more stickers</li>
+          </ol>
+        </div>
+      </div>
+      <button onclick="showAddFriendForm()" id="add-friend-btn" style="width:100%;padding:12px;background:#007aff;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:12px;">+ Add Friend</button>
+      <div id="friend-form" style="display:none;background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);padding:14px;margin-bottom:14px;">
+        <div style="font-size:14px;font-weight:700;color:#1c1c1e;margin-bottom:10px" id="friend-form-title">Add Friend</div>
+        <input type="text" id="friend-name-input" placeholder="Friend's name…" style="width:100%;padding:9px 12px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.2);font-size:14px;margin-bottom:8px;outline:none;box-sizing:border-box;">
+        <textarea id="friend-json-input" placeholder="Paste their JSON backup here… (optional — you can add it later with ✏️)" style="width:100%;height:90px;padding:9px 12px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.2);font-size:12px;font-family:monospace;resize:none;outline:none;margin-bottom:8px;box-sizing:border-box;"></textarea>
+        <div id="friend-form-status" style="font-size:13px;margin-bottom:8px;min-height:16px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="saveFriendForm()" style="flex:1;padding:10px;background:#34c759;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">Save</button>
+          <button onclick="hideFriendForm()" style="flex:1;padding:10px;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+        </div>
+      </div>
+      <div id="invite-prompt" style="display:none;background:#f0fff4;border:1px solid #34c759;border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:14px;font-weight:600;color:#248a3d;margin-bottom:6px;">✅ Friend added!</div>
+        <div style="font-size:13px;color:#3c3c43;margin-bottom:10px;">Want to invite <strong id="invite-name"></strong> to the app so they can track their own album?</div>
+        <div style="display:flex;gap:8px;">
+          <a id="invite-link" href="#" style="flex:1;padding:9px;background:#34c759;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;">📱 Send text</a>
+          <button onclick="copyInviteLink()" style="flex:1;padding:9px;background:#007aff;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">📋 Copy link</button>
+          <button onclick="document.getElementById('invite-prompt').style.display='none'" style="flex:1;padding:9px;background:#f2f2f7;color:#8e8e93;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Skip</button>
+        </div>
+      </div>
+      <div id="trades-content"></div>
+    </div>
+  </div>
+  <div id="view-groups" style="display:none">
+    <div style="padding:12px 16px" id="groups-content"></div>
+  </div>
+
+</div>
+
+<div class="modal-overlay hidden" id="reset-overlay" onclick="if(event.target===this)hideResetConfirm()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 style="color:#ff3b30">⚠️ Reset Album</h2>
+    <p style="font-size:14px;color:#3c3c43;margin:12px 0 20px;line-height:1.5">This will erase <strong>all collected stickers, trade stock, and blue markers</strong>. The album will start completely from zero.<br><br>This cannot be undone.</p>
+    <div style="display:flex;gap:8px;">
+      <button onclick="confirmReset()" style="flex:1;padding:14px;background:#ff3b30;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;">Yes, reset everything</button>
+      <button onclick="hideResetConfirm()" style="flex:1;padding:14px;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modal-title">Sticker</h2>
+
+    <div id="modal-view-trade">
+      <p style="font-size:13px;color:#8e8e93;margin-bottom:10px">Trading for: <strong id="trade-target-label" style="color:#1c1c1e"></strong></p>
+
+      <input type="text" id="trade-search" placeholder="Search sticker (e.g. SCO1)…"
+        style="width:100%;padding:9px 12px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.2);font-size:14px;margin-bottom:8px;outline:none;"
+        oninput="renderTradeSearch()">
+
+      <div id="trade-search-results" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;margin-bottom:12px;"></div>
+
+      <div id="trade-basket-wrap" style="display:none;margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Stickers to trade away</div>
+        <div id="trade-basket" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button onclick="confirmTrade()" style="flex:1;padding:12px;background:#34c759;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;">Confirm trade</button>
+        <button onclick="closeModal()" style="flex:1;padding:12px;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// All 48 teams organized by their official FIFA WC 2026 groups (A–L)
+// plus a Tournament section for general/FWC stickers
+const GROUPS = [
+  { group: "Panini", sections: [
+    { section:"Panini", prefix:"PNI", count:0, flag:"⭐", customStickers:["PNI00"] },
+  ]},
+  { group: "FWC", sections: [
+    { section:"FWC", prefix:"FWC", count:19, flag:"🏆" },
+  ]},
+  { group: "Group A", sections: [
+    { section:"Mexico", prefix:"MEX", count:20, flag:"🇲🇽" },
+    { section:"South Africa", prefix:"RSA", count:20, flag:"🇿🇦" },
+    { section:"South Korea", prefix:"KOR", count:20, flag:"🇰🇷" },
+    { section:"Czechia", prefix:"CZE", count:20, flag:"🇨🇿" },
+  ]},
+  { group: "Group B", sections: [
+    { section:"Canada", prefix:"CAN", count:20, flag:"🇨🇦" },
+    { section:"Bosnia & Herz.", prefix:"BIH", count:20, flag:"🇧🇦" },
+    { section:"Qatar", prefix:"QAT", count:20, flag:"🇶🇦" },
+    { section:"Switzerland", prefix:"SUI", count:20, flag:"🇨🇭" },
+  ]},
+  { group: "Group C", sections: [
+    { section:"Brazil", prefix:"BRA", count:20, flag:"🇧🇷" },
+    { section:"Morocco", prefix:"MAR", count:20, flag:"🇲🇦" },
+    { section:"Haiti", prefix:"HAI", count:20, flag:"🇭🇹" },
+    { section:"Scotland", prefix:"SCO", count:20, flag:"SC" },
+  ]},
+  { group: "Group D", sections: [
+    { section:"USA", prefix:"USA", count:20, flag:"🇺🇸" },
+    { section:"Paraguay", prefix:"PAR", count:20, flag:"🇵🇾" },
+    { section:"Australia", prefix:"AUS", count:20, flag:"🇦🇺" },
+    { section:"Turkey", prefix:"TUR", count:20, flag:"🇹🇷" },
+  ]},
+  { group: "Group E", sections: [
+    { section:"Germany", prefix:"GER", count:20, flag:"🇩🇪" },
+    { section:"Curaçao", prefix:"CUW", count:20, flag:"🇨🇼" },
+    { section:"Ivory Coast", prefix:"CIV", count:20, flag:"🇨🇮" },
+    { section:"Ecuador", prefix:"ECU", count:20, flag:"🇪🇨" },
+  ]},
+  { group: "Group F", sections: [
+    { section:"Netherlands", prefix:"NED", count:20, flag:"🇳🇱" },
+    { section:"Japan", prefix:"JPN", count:20, flag:"🇯🇵" },
+    { section:"Sweden", prefix:"SWE", count:20, flag:"🇸🇪" },
+    { section:"Tunisia", prefix:"TUN", count:20, flag:"🇹🇳" },
+  ]},
+  { group: "Group G", sections: [
+    { section:"Belgium", prefix:"BEL", count:20, flag:"🇧🇪" },
+    { section:"Egypt", prefix:"EGY", count:20, flag:"🇪🇬" },
+    { section:"Iran", prefix:"IRN", count:20, flag:"🇮🇷" },
+    { section:"New Zealand", prefix:"NZL", count:20, flag:"🇳🇿" },
+  ]},
+  { group: "Group H", sections: [
+    { section:"Spain", prefix:"ESP", count:20, flag:"🇪🇸" },
+    { section:"Cape Verde", prefix:"CPV", count:20, flag:"🇨🇻" },
+    { section:"Saudi Arabia", prefix:"KSA", count:20, flag:"🇸🇦" },
+    { section:"Uruguay", prefix:"URU", count:20, flag:"🇺🇾" },
+  ]},
+  { group: "Group I", sections: [
+    { section:"France", prefix:"FRA", count:20, flag:"🇫🇷" },
+    { section:"Senegal", prefix:"SEN", count:20, flag:"🇸🇳" },
+    { section:"Iraq", prefix:"IRQ", count:20, flag:"🇮🇶" },
+    { section:"Norway", prefix:"NOR", count:20, flag:"🇳🇴" },
+  ]},
+  { group: "Group J", sections: [
+    { section:"Argentina", prefix:"ARG", count:20, flag:"🇦🇷" },
+    { section:"Algeria", prefix:"ALG", count:20, flag:"🇩🇿" },
+    { section:"Austria", prefix:"AUT", count:20, flag:"🇦🇹" },
+    { section:"Jordan", prefix:"JOR", count:20, flag:"🇯🇴" },
+  ]},
+  { group: "Group K", sections: [
+    { section:"Portugal", prefix:"POR", count:20, flag:"🇵🇹" },
+    { section:"DR Congo", prefix:"COD", count:20, flag:"🇨🇩" },
+    { section:"Uzbekistan", prefix:"UZB", count:20, flag:"🇺🇿" },
+    { section:"Colombia", prefix:"COL", count:20, flag:"🇨🇴" },
+  ]},
+  { group: "Group L", sections: [
+    { section:"England", prefix:"ENG", count:20, flag:"EN" },
+    { section:"Croatia", prefix:"CRO", count:20, flag:"🇭🇷" },
+    { section:"Ghana", prefix:"GHA", count:20, flag:"🇬🇭" },
+    { section:"Panama", prefix:"PAN", count:20, flag:"🇵🇦" },
+  ]},
+];
+
+// Flatten for easy lookup
+const ALL_SECTIONS = GROUPS.flatMap(g => g.sections.map(s => ({
+  ...s,
+  groupLabel: g.group,
+  stickers: s.customStickers || Array.from({length: s.count}, (_, i) => s.prefix + (i + 1))
+})));
+
+let state = { collected: {}, stock: {} };
+const KEY = 'wc2026v8';
+let currentTab = 'album';
+let modalSticker = null;
+let modalTempStock = 0;
+let pressTimer = null;
+
+const MISSING = {
+  FWC:[6,13,18], MEX:[6,8,18], RSA:[1,4,13,16,19], KOR:[6,7,8],
+  CZE:[3,5,12,14,19], CAN:[3,9,12], BIH:[5,6,8,19], QAT:[2],
+  SUI:[4,6,8,12], BRA:[2,5,8,12,18,20], MAR:[1,6,8,12,14],
+  HAI:[18,19], SCO:[8], USA:[1,3,6,9,15,16,17], PAR:[7,15],
+  AUS:[4,10], TUR:[17,19], GER:[6,11,12,19], CUW:[6,9,11],
+  CIV:[10], ECU:[3,6,11,18], NED:[6,16], JPN:[3,9,11],
+  SWE:[1,4,6,19,20], TUN:[3,6,12], BEL:[7,8,10], EGY:[3,10,14,19],
+  IRN:[], NZL:[10,16,17,18], ESP:[9,12,18], CPV:[9,12,19],
+  KSA:[3,19], URU:[2,4,6], FRA:[1,20], SEN:[5,6,14],
+  IRQ:[7,18], NOR:[1,8,17], ARG:[4,7,10,11,14,20],
+  ALG:[1,3,4,6,12,16,20], AUT:[11,12,13], JOR:[10,13,19,20],
+  POR:[16], COD:[5,20], UZB:[2,5,14,18], COL:[3,13],
+  ENG:[1,4,9], CRO:[6,11,13,15,16,17,18], GHA:[2,4,9], PAN:[5]
+};
+
+function prePopulate() {
+  for (const sec of ALL_SECTIONS) {
+    const missing = new Set((MISSING[sec.prefix] || []).map(n => sec.prefix + n));
+    for (const id of sec.stickers) {
+      if (!missing.has(id)) state.collected[id] = true;
+    }
+  }
+  if (!state.pending) state.pending = {};
+  saveState();
+}
+
+function loadState() {
+  try {
+    const r = localStorage.getItem(KEY);
+    if (r) state = JSON.parse(r);
+  } catch(e) {}
+  if (!state.pending) state.pending = {};
+  buildOriginalMissing();
+  updateStats(); renderAlbum(); renderStock(); renderAnalytics();
+}
+function saveState() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {} }
+
+function quickToggle(id) {
+  if (pressTimer === true) return;
+  if (!state.pending) state.pending = {};
+  const isCollected = !!state.collected[id];
+  const isPending = !!state.pending[id];
+  if (!isCollected && !isPending) {
+    // uncollected → green (collected)
+    state.collected[id] = true;
+    delete state.pending[id];
+  } else if (isCollected && !isPending) {
+    // green → blue (brother has it)
+    delete state.collected[id];
+    state.pending[id] = true;
+  } else {
+    // blue → uncollected
+    delete state.collected[id];
+    delete state.pending[id];
+  }
+  saveState(); updateStats(); renderAlbum();
+}
+function allStickers() {
+  return ALL_SECTIONS.flatMap(s => s.stickers.map(id => ({ id, section: s.section, flag: s.flag })));
+}
+
+function updateStats() {
+  const all = allStickers();
+  const total = all.length;
+  const collected = all.filter(s => state.collected[s.id] || (state.pending && state.pending[s.id])).length;
+  const stock = Object.values(state.stock).reduce((a, b) => a + b, 0);
+  document.getElementById('stat-collected').textContent = collected;
+  document.getElementById('stat-missing').textContent = total - collected;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-stock').textContent = stock;
+  const pct = total ? Math.round(collected / total * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = pct + '% complete';
+  const teamSections = ALL_SECTIONS.filter(s => s.groupLabel !== 'Panini' && s.groupLabel !== 'FWC');
+  const completeTeams = teamSections.filter(s => s.stickers.every(id => state.collected[id])).length;
+  document.getElementById('stat-complete-teams').textContent = completeTeams + ' / ' + teamSections.length;
+}
+
+function renderAlbum() {
+  const query = (document.getElementById('search-input').value || '').toLowerCase();
+  const filter = document.getElementById('filter-select').value;
+  let html = '';
+  let lastGroup = null;
+
+  const all = allStickers();
+  const greenCount = all.filter(s => state.collected[s.id]).length;
+  const blueCount = all.filter(s => state.pending && state.pending[s.id]).length;
+  const countsEl = document.getElementById('album-filter-counts');
+  if (countsEl) countsEl.innerHTML = `
+    <span style="font-size:12px;padding:4px 10px;background:#f0fff4;border:0.5px solid #34c759;border-radius:99px;color:#248a3d;font-weight:600;cursor:pointer" onclick="document.getElementById('filter-select').value='green';renderAlbum()">✓ Green: ${greenCount}</span>
+    <span style="font-size:12px;padding:4px 10px;background:#e8f4ff;border:0.5px solid #007aff;border-radius:99px;color:#0051a8;font-weight:600;cursor:pointer" onclick="document.getElementById('filter-select').value='blue';renderAlbum()">🤝 Blue: ${blueCount}</span>`;
+
+  for (const sec of ALL_SECTIONS) {
+    const stickers = sec.stickers.filter(id => {
+      const matchQ = !query || id.toLowerCase().includes(query) || sec.section.toLowerCase().includes(query) || sec.groupLabel.toLowerCase().includes(query);
+      const col = !!state.collected[id];
+      const pend = !!(state.pending && state.pending[id]);
+      const matchF = filter === 'all' || (filter === 'missing' && !col && !pend) || (filter === 'collected' && (col || pend)) || (filter === 'green' && col) || (filter === 'blue' && pend);
+      return matchQ && matchF;
+    });
+    if (!stickers.length) continue;
+
+    if (sec.groupLabel !== lastGroup) {
+      if (lastGroup !== null) html += '<div class="group-divider"></div>';
+      const groupColor = groupColors[sec.groupLabel] || '#1c1c1e';
+      html += `<div style="margin-bottom:12px"><span class="group-label" style="background:${groupColor}">${sec.groupLabel}</span></div>`;
+      lastGroup = sec.groupLabel;
+    }
+
+    const secCol = sec.stickers.filter(id => state.collected[id] || (state.pending && state.pending[id])).length;
+    const flagHtml = `<span style="font-size:12px;font-weight:700;color:#1c1c1e;min-width:36px;display:inline-block">${sec.prefix}</span>`;
+    html += `<div class="country-block"><div class="country-header">${flagHtml}<span class="country-name">${sec.section}</span><span class="country-progress">${secCol}/${sec.stickers.length}</span></div><div class="sticker-grid">`;
+    for (const id of stickers) {
+      const col = state.collected[id] ? 'collected' : (state.pending && state.pending[id] ? 'pending' : '');
+      const hs = (state.stock[id] || 0) > 0 ? 'has-stock' : '';
+      const sv = state.stock[id] || 0;
+      const num = id.replace(sec.prefix, '');
+      html += `<div class="sticker ${col} ${hs}"
+        ontouchstart="startPress('${id}',event)" ontouchend="endPress()" ontouchcancel="endPress()"
+        onmousedown="startPress('${id}',event)" onmouseup="endPress()" onmouseleave="endPress()"
+        onclick="quickToggle('${id}')">
+        <span class="stock-badge">${sv}</span><span class="check-icon">✓</span><span class="pending-icon">🤝</span>
+        <span class="sflag"><span class="sflag-text">${sec.prefix}</span></span><span class="num">${num}</span>
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+  document.getElementById('album-content').innerHTML = html || '<div class="empty-state"><div class="empty-icon">🔍</div>No stickers found.</div>';
+}
+
+const groupColors = {
+  'Panini':'#ff9500','FWC':'#5856d6','Group A':'#ff3b30','Group B':'#ff9500','Group C':'#34c759',
+  'Group D':'#007aff','Group E':'#af52de','Group F':'#ff2d55','Group G':'#00c7be',
+  'Group H':'#ff6b00','Group I':'#30b0c7','Group J':'#32ade6','Group K':'#34c759',
+  'Group L':'#a2845e'
+};
+
+function renderMissing() {
+
+  for (const sec of ALL_SECTIONS) {
+    if (sec.stickers.length === 0) continue;
+    const originallyMissingFiltered = sec.stickers.filter(id => {
+      if (!originalMissing.has(id)) return false;
+      const matchQ = !query || id.toLowerCase().includes(query) || sec.section.toLowerCase().includes(query) || sec.groupLabel.toLowerCase().includes(query);
+      if (!matchQ) return false;
+      const got = !!state.collected[id];
+      const pend = !!(state.pending && state.pending[id]);
+      if (filter === 'uncollected') return !got && !pend;
+      if (filter === 'green') return got;
+      if (filter === 'blue') return pend;
+      return true;
+    });
+    if (!originallyMissingFiltered.length) continue;
+    const stillMissing = sec.stickers.filter(id => originalMissing.has(id) && !state.collected[id] && !(state.pending && state.pending[id])).length;
+    if (sec.groupLabel !== lastGroup) {
+      if (lastGroup !== null) html += '<div class="group-divider"></div>';
+      const groupColor = groupColors[sec.groupLabel] || '#1c1c1e';
+      html += `<div style="margin-bottom:12px"><span class="group-label" style="background:${groupColor}">${sec.groupLabel}</span></div>`;
+      lastGroup = sec.groupLabel;
+    }
+    const flagHtml = `<span style="font-size:12px;font-weight:700;color:#1c1c1e;min-width:36px;display:inline-block">${sec.prefix}</span>`;
+    html += `<div class="country-block"><div class="country-header">${flagHtml}<span class="country-name">${sec.section}</span><span class="country-progress">${stillMissing} missing</span></div><div class="sticker-grid">`;
+    for (const id of originallyMissingFiltered) {
+      const num = id.replace(sec.prefix, '');
+      const got = !!state.collected[id];
+      const pend = !!(state.pending && state.pending[id]);
+      const bg = got ? 'background:#e5e5ea;border-color:#c7c7cc;' : pend ? 'background:#e8f4ff;border-color:#007aff;' : '';
+      const txtColor = got ? 'color:#c7c7cc;' : pend ? 'color:#007aff;' : '';
+      html += `<div class="sticker" style="${bg}" onclick="missingTap('${id}')">
+        ${got ? `<span style="position:absolute;top:2px;right:3px;font-size:9px;font-weight:700;color:#8e8e93">✓</span>` : pend ? `<span style="position:absolute;top:2px;right:3px;font-size:9px;">🤝</span>` : ''}
+        <span class="sflag"><span class="sflag-text" style="${txtColor}">${sec.prefix}</span></span>
+        <span class="num" style="${txtColor}">${num}</span>
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+  document.getElementById('missing-content').innerHTML = html || '<div class="empty-state"><div class="empty-icon">🎉</div>Album complete!</div>';
+}
+
+function renderStock() {
+  const query = (document.getElementById('stock-search')?.value || '').toLowerCase();
+  let html = '';
+  let lastGroup = null;
+
+  for (const sec of ALL_SECTIONS) {
+    const stickers = sec.stickers.filter(id =>
+      !query || id.toLowerCase().includes(query) || sec.section.toLowerCase().includes(query) || sec.groupLabel.toLowerCase().includes(query));
+    if (!stickers.length) continue;
+    if (sec.groupLabel !== lastGroup) {
+      if (lastGroup !== null) html += '<div class="group-divider"></div>';
+      const groupColor = groupColors[sec.groupLabel] || '#1c1c1e';
+      html += `<div style="margin-bottom:12px"><span class="group-label" style="background:${groupColor}">${sec.groupLabel}</span></div>`;
+      lastGroup = sec.groupLabel;
+    }
+    const flagHtml = `<span style="font-size:12px;font-weight:700;color:#1c1c1e;min-width:36px;display:inline-block">${sec.prefix}</span>`;
+    const totalStock = sec.stickers.reduce((a, id) => a + (state.stock[id] || 0), 0);
+    html += `<div class="country-block"><div class="country-header">${flagHtml}<span class="country-name">${sec.section}</span><span class="country-progress">${totalStock} in stock</span></div><div class="sticker-grid">`;
+    for (const id of stickers) {
+      const num = id.replace(sec.prefix, '');
+      const qty = state.stock[id] || 0;
+      const hasStock = qty > 0;
+      html += `<div class="sticker" style="padding-bottom:22px;${hasStock ? 'background:#e8f4ff;border-color:#007aff;' : ''}">
+        ${hasStock ? `<span style="position:absolute;top:3px;right:4px;font-size:9px;font-weight:700;background:#007aff;color:#fff;border-radius:4px;padding:1px 4px;min-width:14px;text-align:center">${qty}</span>` : ''}
+        <span class="sflag"><span class="sflag-text" style="${hasStock ? 'color:#007aff;' : ''}">${sec.prefix}</span></span>
+        <span class="num" style="${hasStock ? 'color:#007aff;' : ''}">${num}</span>
+        <div style="position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:4px;">
+          <button onclick="event.stopPropagation();changeStock('${id}',-1)" style="width:20px;height:20px;border-radius:50%;border:1px solid #e5e5ea;background:#f2f2f7;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#ff3b30;line-height:1;padding:0">−</button>
+          <button onclick="event.stopPropagation();changeStock('${id}',1)" style="width:20px;height:20px;border-radius:50%;border:1px solid #e5e5ea;background:#f2f2f7;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#34c759;line-height:1;padding:0">+</button>
+        </div>
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+  document.getElementById('stock-content').innerHTML = html;
+}
+
+let pendingCollect = new Set();
+let originalMissing = new Set();
+
+function buildOriginalMissing() {
+  originalMissing.clear();
+  for (const sec of ALL_SECTIONS) {
+    const missingNums = MISSING[sec.prefix] || [];
+    for (const n of missingNums) originalMissing.add(sec.prefix + n);
+  }
+  if (state.extraMissing) for (const id of state.extraMissing) originalMissing.add(id);
+}
+
+function missingTap(id) {
+  if (!state.pending) state.pending = {};
+  const isCollected = !!state.collected[id];
+  const isPending = !!state.pending[id];
+  if (!isCollected && !isPending) {
+    state.collected[id] = true;
+  } else if (isCollected) {
+    delete state.collected[id];
+    state.pending[id] = true;
+  } else {
+    delete state.pending[id];
+  }
+  saveState(); updateStats(); renderAlbum();
+}
+
+function startPress(id, e) {
+  pressTimer = null;
+  const isCollected = !!state.collected[id];
+  const isPending = !!(state.pending && state.pending[id]);
+  if (isCollected || isPending) return;
+  const t = setTimeout(() => { pressTimer = true; openModal(id); }, 500);
+  pressTimer = t;
+}
+function endPress() { if (typeof pressTimer === 'number') { clearTimeout(pressTimer); pressTimer = null; } }
+
+function changeStock(id, delta) {
+  state.stock[id] = Math.max(0, (state.stock[id] || 0) + delta);
+  if (state.stock[id] === 0) delete state.stock[id];
+  saveState(); updateStats(); renderStock(); renderAlbum();
+}
+
+function openModal(id) {
+  modalSticker = id;
+  modalTempStock = state.stock[id] || 0;
+  const sec = ALL_SECTIONS.find(s => s.stickers.includes(id));
+  document.getElementById('modal-title').textContent = sec ? `${sec.prefix}${id.replace(sec.prefix,'')} — ${sec.section}` : id;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  openTradeView();
+}
+function handleOverlayClick(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); modalSticker = null; }
+function modalChangeStock(delta) { modalTempStock = Math.max(0, modalTempStock + delta); document.getElementById('modal-stock-val').textContent = modalTempStock; }
+function saveModal() {
+  if (!modalSticker) return;
+  const col = document.getElementById('modal-collected').checked;
+  if (col) state.collected[modalSticker] = true; else delete state.collected[modalSticker];
+  state.stock[modalSticker] = modalTempStock;
+  if (modalTempStock === 0) delete state.stock[modalSticker];
+  saveState(); updateStats(); renderAlbum(); renderStock(); closeModal();
+}
+
+let tradeBasket = {};
+
+function openTradeView() {
+  tradeBasket = {};
+  document.getElementById('trade-target-label').textContent = modalSticker;
+  document.getElementById('trade-search').value = '';
+  document.getElementById('trade-stock-list') && (document.getElementById('trade-stock-list').innerHTML = '');
+  document.getElementById('trade-search-results').innerHTML = '';
+  document.getElementById('trade-basket').innerHTML = '';
+  document.getElementById('trade-basket-wrap').style.display = 'none';
+  renderTradeSearch();
+}
+
+function renderTradeSearch() {
+  const query = (document.getElementById('trade-search').value || '').toLowerCase();
+  let html = '';
+  let count = 0;
+  for (const sec of ALL_SECTIONS) {
+    for (const id of sec.stickers) {
+      const qty = state.stock[id] || 0;
+      if (qty === 0) continue;
+      if (query && !id.toLowerCase().includes(query) && !sec.section.toLowerCase().includes(query)) continue;
+      const alreadyInBasket = tradeBasket[id] || 0;
+      const available = qty - alreadyInBasket;
+      if (available <= 0) continue;
+      const options = Array.from({length: available}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('');
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f2f2f7;border-radius:10px;">
+        <span style="font-size:13px;font-weight:600;color:#1c1c1e;flex:1">${id}</span>
+        <span style="font-size:11px;color:#8e8e93">${sec.section}</span>
+        <span style="font-size:12px;font-weight:700;color:#007aff">×${available}</span>
+        <select id="addqty_${id}" style="padding:3px 6px;border-radius:7px;border:0.5px solid rgba(0,0,0,0.2);font-size:13px;font-weight:600;background:#fff;">${options}</select>
+        <button onclick="addToTradeBasket('${id}')" style="padding:5px 10px;border-radius:8px;border:none;background:#007aff;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+      </div>`;
+      count++;
+      if (count >= 20) break;
+    }
+    if (count >= 20) break;
+  }
+  document.getElementById('trade-search-results').innerHTML = html || (query ? '<div style="text-align:center;color:#8e8e93;font-size:13px;padding:12px">No results found.</div>' : '<div style="text-align:center;color:#8e8e93;font-size:13px;padding:12px">Type to search your stock.</div>');
+}
+
+function addToTradeBasket(id) {
+  const qtyEl = document.getElementById('addqty_' + id);
+  const qty = qtyEl ? parseInt(qtyEl.value) : 1;
+  tradeBasket[id] = (tradeBasket[id] || 0) + qty;
+  renderBasket();
+  renderTradeSearch();
+}
+
+function removeFromBasket(id) {
+  delete tradeBasket[id];
+  renderBasket();
+  renderTradeSearch();
+}
+
+function renderBasket() {
+  const ids = Object.keys(tradeBasket);
+  const wrap = document.getElementById('trade-basket-wrap');
+  if (!ids.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  let html = '';
+  for (const id of ids) {
+    html += `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#fff3f3;border:0.5px solid #ffb3b3;border-radius:99px;font-size:12px;font-weight:600;color:#ff3b30;">
+      ${id} ×${tradeBasket[id]}
+      <span onclick="removeFromBasket('${id}')" style="cursor:pointer;font-size:14px;color:#ff3b30;line-height:1;margin-left:2px">×</span>
+    </span>`;
+  }
+  document.getElementById('trade-basket').innerHTML = html;
+}
+
+function confirmTrade() {
+  if (!Object.keys(tradeBasket).length) { alert('Add at least one sticker to trade away.'); return; }
+  for (const id of Object.keys(tradeBasket)) {
+    state.stock[id] = Math.max(0, (state.stock[id] || 0) - tradeBasket[id]);
+    if (state.stock[id] === 0) delete state.stock[id];
+  }
+  if (modalSticker) state.collected[modalSticker] = true;
+  saveState(); updateStats(); renderAlbum(); renderStock();
+  closeModal();
+}
+let expandedTeam = null;
+let statsView = 'missing';
+
+function setStatsView(view) {
+  statsView = view;
+  document.getElementById('stats-tab-missing').style.background = view === 'missing' ? '#1c1c1e' : '#fff';
+  document.getElementById('stats-tab-missing').style.color = view === 'missing' ? '#fff' : '#8e8e93';
+  document.getElementById('stats-tab-stock').style.background = view === 'stock' ? '#1c1c1e' : '#fff';
+  document.getElementById('stats-tab-stock').style.color = view === 'stock' ? '#fff' : '#8e8e93';
+  document.getElementById('stats-tab-duplicates').style.background = view === 'duplicates' ? '#1c1c1e' : '#fff';
+  document.getElementById('stats-tab-duplicates').style.color = view === 'duplicates' ? '#fff' : '#8e8e93';
+  document.getElementById('stats-tab-groups').style.background = view === 'groups' ? '#1c1c1e' : '#fff';
+  document.getElementById('stats-tab-groups').style.color = view === 'groups' ? '#fff' : '#8e8e93';
+  // Hide search bar for groups view
+  document.getElementById('analytics-search').style.display = view === 'groups' ? 'none' : '';
+  expandedTeam = null;
+  renderAnalytics();
+}
+
+function toggleAnalyticsTeam(prefix) {
+  expandedTeam = expandedTeam === prefix ? null : prefix;
+  renderAnalytics();
+}
+
+function renderAnalytics() {
+  const query = (document.getElementById('analytics-search')?.value || '').toLowerCase();
+  const rows = [];
+  for (const sec of ALL_SECTIONS) {
+    const total = sec.stickers.length;
+    const missing = sec.stickers.filter(id => !state.collected[id] && !(state.pending && state.pending[id])).length;
+    const collected = total - missing;
+    if (total === 0) continue;
+    const matchesSticker = query && sec.stickers.some(id => id.toLowerCase() === query);
+    const matchesTeam = !query || sec.section.toLowerCase().includes(query) || sec.prefix.toLowerCase().includes(query) || sec.groupLabel.toLowerCase().includes(query) || matchesSticker;
+    if (!matchesTeam) continue;
+    if (matchesSticker) expandedTeam = sec.prefix;
+    rows.push({ section: sec.section, prefix: sec.prefix, group: sec.groupLabel, total, missing, collected, pct: Math.round(collected / total * 100), isTeam: sec.groupLabel !== 'Panini' && sec.groupLabel !== 'FWC' });
+  }
+
+  const groupColor = {
+    'Panini':'#ff9500','FWC':'#5856d6','Group A':'#ff3b30','Group B':'#ff9500','Group C':'#34c759',
+    'Group D':'#007aff','Group E':'#af52de','Group F':'#ff2d55','Group G':'#00c7be',
+    'Group H':'#ff6b00','Group I':'#30b0c7','Group J':'#32ade6','Group K':'#34c759','Group L':'#a2845e'
+  };
+
+  function buildRow(r) {
+    const color = groupColor[r.group] || '#8e8e93';
+    const isExpanded = expandedTeam === r.prefix;
+    const sec = ALL_SECTIONS.find(s => s.prefix === r.prefix);
+
+    let expandedIds = [];
+    let expandedStyle = '';
+    let expandedLabel = '';
+    if (statsView === 'missing') {
+      expandedIds = sec ? sec.stickers.filter(id => !state.collected[id] && !(state.pending && state.pending[id])) : [];
+      expandedStyle = 'background:#fff3f3;border:0.5px solid #ffb3b3;color:#ff3b30;';
+    } else {
+      expandedIds = sec ? sec.stickers.filter(id => (state.stock[id] || 0) > 0) : [];
+      expandedStyle = 'background:#e8f4ff;border:0.5px solid #b3d4ff;color:#007aff;';
+    }
+
+    let detailHtml = '';
+    if (isExpanded && expandedIds.length > 0) {
+      detailHtml = `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(0,0,0,0.08)">`;
+      for (const id of expandedIds) {
+        const extra = statsView === 'stock' ? ` ×${state.stock[id]}` : '';
+        detailHtml += `<span style="font-size:12px;padding:4px 9px;${expandedStyle}border-radius:99px;font-weight:600">${id}${extra}</span>`;
+      }
+      detailHtml += `</div>`;
+    } else if (isExpanded && expandedIds.length === 0) {
+      const msg = statsView === 'missing' ? '✓ All stickers collected!' : 'No stock for this team.';
+      detailHtml = `<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(0,0,0,0.08);font-size:13px;color:${statsView==='missing'?'#34c759':'#8e8e93'};font-weight:600">${msg}</div>`;
+    }
+
+    const countLabel = statsView === 'missing'
+      ? (r.missing === 0 ? '<span style="color:#34c759">Complete</span>' : `<span style="color:#ff3b30">${r.missing} missing</span>`)
+      : (r.stockCount === 0 ? '<span style="color:#8e8e93">None</span>' : `<span style="color:#007aff">${r.stockCount} in stock</span>`);
+
+    return `
+      <div style="background:#fff;border-radius:10px;padding:10px 12px;border:0.5px solid rgba(0,0,0,0.08);cursor:pointer;-webkit-tap-highlight-color:transparent;" onclick="toggleAnalyticsTeam('${r.prefix}')" ontouchend="event.preventDefault();toggleAnalyticsTeam('${r.prefix}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:10px;font-weight:700;background:${color};color:#fff;border-radius:4px;padding:2px 5px">${r.prefix}</span>
+            <span style="font-size:13px;font-weight:600;color:#1c1c1e">${r.section}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${countLabel}
+            <span style="font-size:13px;color:#8e8e93">${isExpanded?'▲':'▼'}</span>
+          </div>
+        </div>
+        ${detailHtml}
+      </div>`;
+  }
+
+  let html = '';
+
+  if (statsView === 'missing') {
+    const teamRows = rows.filter(r => r.isTeam);
+    const nonTeamRows = rows.filter(r => !r.isTeam);
+    const missingTeams = teamRows.filter(r => r.missing > 0).sort((a, b) => b.missing - a.missing);
+    const completeTeams = teamRows.filter(r => r.missing === 0).sort((a, b) => a.section.localeCompare(b.section));
+    const missingNonTeams = nonTeamRows.filter(r => r.missing > 0);
+    const completeNonTeams = nonTeamRows.filter(r => r.missing === 0);
+
+    if (missingNonTeams.length) {
+      html += `<div style="font-size:12px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Other stickers — missing</div><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">`;
+      for (const r of missingNonTeams) html += buildRow(r);
+      html += '</div>';
+    }
+    if (missingTeams.length) {
+      html += `<div style="font-size:12px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Teams with missing stickers (${missingTeams.length})</div><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">`;
+      for (const r of missingTeams) html += buildRow(r);
+      html += '</div>';
+    }
+    const allComplete = [...completeTeams, ...completeNonTeams];
+    if (allComplete.length) {
+      html += `<div style="font-size:12px;font-weight:700;color:#34c759;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Completed (${allComplete.length})</div><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">`;
+      for (const r of allComplete) html += buildRow(r);
+      html += '</div>';
+    }
+  } else if (statsView === 'stock') {
+    // Stock view
+    for (const r of rows) {
+      const sec = ALL_SECTIONS.find(s => s.prefix === r.prefix);
+      r.stockCount = sec ? sec.stickers.reduce((a, id) => a + (state.stock[id] || 0), 0) : 0;
+    }
+    const withStock = rows.filter(r => r.stockCount > 0).sort((a, b) => b.stockCount - a.stockCount);
+    const noStock = rows.filter(r => r.stockCount === 0);
+
+    if (withStock.length) {
+      html += `<div style="font-size:12px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Teams with stock (${withStock.length})</div><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">`;
+      for (const r of withStock) html += buildRow(r);
+      html += '</div>';
+    }
+    if (noStock.length) {
+      html += `<div style="font-size:12px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">No stock (${noStock.length})</div><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">`;
+      for (const r of noStock) html += buildRow(r);
+      html += '</div>';
+    }
+  } else if (statsView === 'groups') {
+    html = '';
+    const gc = {'Panini':'#ff9500','FWC':'#5856d6','Group A':'#ff3b30','Group B':'#ff9500','Group C':'#34c759','Group D':'#007aff','Group E':'#af52de','Group F':'#ff2d55','Group G':'#00c7be','Group H':'#ff6b00','Group I':'#30b0c7','Group J':'#32ade6','Group K':'#34c759','Group L':'#a2845e'};
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+    for (const g of GROUPS) {
+      if (g.group === 'Panini' || g.group === 'FWC') continue;
+      const color = gc[g.group] || '#8e8e93';
+      html += `<div style="background:#fff;border-radius:12px;border:0.5px solid rgba(0,0,0,0.08);overflow:hidden;">
+        <div style="background:${color};padding:7px 12px;">
+          <span style="font-size:12px;font-weight:700;color:#fff;letter-spacing:0.05em">${g.group}</span>
+        </div>
+        <div style="padding:8px 12px;display:flex;flex-direction:column;gap:6px;">`;
+      for (const sec of g.sections) {
+        const fullSec = ALL_SECTIONS.find(s => s.prefix === sec.prefix);
+        const total = fullSec ? fullSec.stickers.length : sec.count;
+        const collected = fullSec ? fullSec.stickers.filter(id => state.collected[id] || (state.pending && state.pending[id])).length : 0;
+        const complete = collected === total;
+        html += `<div style="display:flex;align-items:center;gap:7px;padding:3px 6px;border-radius:6px;${complete ? 'background:#f0fff4;' : ''}">
+          <span style="font-size:10px;font-weight:700;background:${complete ? '#34c759' : color};color:#fff;border-radius:3px;padding:1px 5px;min-width:32px;text-align:center;">${sec.prefix}</span>
+          <span style="font-size:12px;color:${complete ? '#248a3d' : '#1c1c1e'};font-weight:${complete ? '700' : '500'};flex:1">${sec.section}</span>
+          <span style="font-size:11px;font-weight:600;color:${complete ? '#34c759' : '#8e8e93'}">${complete ? '✓' : collected+'/'+total}</span>
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+    html += '</div>';
+  } else if (statsView === 'duplicates') {
+    const dupQuery = (document.getElementById('analytics-search')?.value || '').toLowerCase();
+    const items = [];
+    for (const sec of ALL_SECTIONS) {
+      for (const id of sec.stickers) {
+        const qty = state.stock[id] || 0;
+        if (qty === 0) continue;
+        if (dupQuery && !id.toLowerCase().includes(dupQuery) && !sec.section.toLowerCase().includes(dupQuery) && !sec.prefix.toLowerCase().includes(dupQuery)) continue;
+        items.push({ id, section: sec.section, prefix: sec.prefix, group: sec.groupLabel, qty });
+      }
+    }
+    items.sort((a, b) => b.qty - a.qty);
+    if (!items.length) {
+      html = `<div style="text-align:center;padding:40px;color:#8e8e93;font-size:15px">${Object.keys(state.stock).length === 0 ? 'No duplicates in stock yet.' : 'No results found.'}</div>`;
+    } else {
+      const gc = {'Panini':'#ff9500','FWC':'#5856d6','Group A':'#ff3b30','Group B':'#ff9500','Group C':'#34c759','Group D':'#007aff','Group E':'#af52de','Group F':'#ff2d55','Group G':'#00c7be','Group H':'#ff6b00','Group I':'#30b0c7','Group J':'#32ade6','Group K':'#34c759','Group L':'#a2845e'};
+      html += `<div style="font-size:12px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">${items.length} sticker types in stock</div><div style="display:flex;flex-direction:column;gap:6px;">`;
+      for (const item of items) {
+        const color = gc[item.group] || '#8e8e93';
+        const barWidth = Math.round(item.qty / items[0].qty * 100);
+        html += `<div style="background:#fff;border-radius:10px;padding:10px 12px;border:0.5px solid rgba(0,0,0,0.08);">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;font-weight:700;background:${color};color:#fff;border-radius:4px;padding:2px 5px">${item.prefix}</span>
+              <span style="font-size:13px;font-weight:600;color:#1c1c1e">${item.id}</span>
+              <span style="font-size:12px;color:#8e8e93">${item.section}</span>
+            </div>
+            <span style="font-size:14px;font-weight:700;color:#007aff">×${item.qty}</span>
+          </div>
+        </div>`;
+      }
+      html += '</div>';
+    }
+  }
+
+  if (!html) html = '<div style="text-align:center;padding:40px;color:#8e8e93;font-size:15px">No results found.</div>';
+  document.getElementById('analytics-content').innerHTML = html;
+}
+
+
+
+function showTab(tab) {
+  currentTab = tab;
+  ['album','analytics','trades','stock'].forEach((t, i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', t === tab);
+    document.getElementById('view-' + t).style.display = t === tab ? '' : 'none';
+  });
+  if (tab === 'analytics') renderAnalytics();
+  if (tab === 'trades') renderTrades();
+}
+function showResetConfirm() {
+  document.getElementById('reset-overlay').classList.remove('hidden');
+}
+function hideResetConfirm() {
+  document.getElementById('reset-overlay').classList.add('hidden');
+}
+function confirmReset() {
+  state = { collected: {}, stock: {}, pending: {} };
+  friends = [];
+  saveState();
+  saveFriends();
+  localStorage.removeItem('wc2026_tips_seen');
+  hideResetConfirm();
+  updateStats(); renderAlbum(); renderStock(); renderAnalytics();
+  if (currentTab === 'trades') renderTrades();
+  showTipsIfFirstVisit();
+}
+
+function toggleRestore() {
+  const wrap = document.getElementById('restore-wrap');
+  wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+}
+
+function exportStockCSV() {
+  const rows = [['Sticker ID', 'Team', 'Group', 'Quantity']];
+  for (const sec of ALL_SECTIONS) {
+    for (const id of sec.stickers) {
+      const qty = state.stock[id] || 0;
+      if (qty > 0) rows.push([id, sec.section, sec.groupLabel, qty]);
+    }
+  }
+  if (rows.length === 1) { alert('No duplicates in stock yet.'); return; }
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'wc2026_duplicates_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyBackup() {
+  const data = JSON.stringify(state);
+  navigator.clipboard.writeText(data).then(() => {
+    alert('Backup copied to clipboard! Paste it in Notes or send it to yourself.');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = data;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Backup copied to clipboard! Paste it in Notes or send it to yourself.');
+  });
+}
+
+function copySiteLink() {
+  const url = window.location.href.split('?')[0];
+  navigator.clipboard.writeText(url).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+  const btn = document.querySelector('button[onclick="copySiteLink()"]');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Copied!';
+  btn.style.background = '#248a3d';
+  setTimeout(() => { btn.textContent = orig; btn.style.background = '#34c759'; }, 2000);
+}
+
+function downloadBackup() {
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'wc2026_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function emailBackup() {
+  const data = JSON.stringify(state);
+  const subject = 'WC 2026 Sticker Backup ' + new Date().toISOString().slice(0,10);
+  const body = 'Paste this into the app to restore your data:\n\n' + data;
+  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+function restoreBackup() {
+  try {
+    const input = document.getElementById('restore-input').value.trim();
+    const parsed = JSON.parse(input);
+    if (!parsed.collected || !parsed.stock) { alert('Invalid backup file.'); return; }
+    state = parsed;
+    saveState();
+    updateStats(); renderAlbum(); renderStock(); renderAnalytics();
+    document.getElementById('restore-wrap').style.display = 'none';
+    document.getElementById('restore-input').value = '';
+    alert('Backup restored successfully!');
+  } catch(e) {
+    alert('Could not read backup. Make sure you pasted the full JSON.');
+  }
+}
+
+// ── TRADES ──────────────────────────────────────────────
+let friends = [];
+const FRIENDS_KEY = 'wc2026_friends_v1';
+
+function loadFriends() {
+  try { const r = localStorage.getItem(FRIENDS_KEY); if (r) friends = JSON.parse(r); } catch(e) {}
+}
+function saveFriends() { try { localStorage.setItem(FRIENDS_KEY, JSON.stringify(friends)); } catch(e) {} }
+
+function renderTrades() {
+  let html = '';
+  if (!friends.length) {
+    html += `<div style="text-align:center;padding:20px;color:#8e8e93;font-size:14px;">No friends added yet.</div>`;
+  } else {
+    for (let i = 0; i < friends.length; i++) {
+      html += buildFriendCard(i);
+    }
+  }
+  document.getElementById('trades-content').innerHTML = html;
+}
+
+let editingFriendIndex = -1;
+
+function showAddFriendForm() {
+  editingFriendIndex = -1;
+  document.getElementById('friend-form-title').textContent = 'Add Friend';
+  document.getElementById('friend-name-input').value = '';
+  document.getElementById('friend-json-input').value = '';
+  document.getElementById('friend-form-status').textContent = '';
+  document.getElementById('friend-form').style.display = 'block';
+  document.getElementById('add-friend-btn').style.display = 'none';
+  document.getElementById('invite-prompt').style.display = 'none';
+}
+
+function hideFriendForm() {
+  document.getElementById('friend-form').style.display = 'none';
+  document.getElementById('add-friend-btn').style.display = 'block';
+}
+
+function saveFriendForm() {
+  const nameEl = document.getElementById('friend-name-input');
+  const jsonEl = document.getElementById('friend-json-input');
+  const statusEl = document.getElementById('friend-form-status');
+  if (!nameEl || !jsonEl) return;
+  const name = nameEl.value.trim();
+  const json = jsonEl.value.trim();
+  if (!name) { statusEl.textContent = '⚠️ Please enter a name.'; statusEl.style.color='#ff3b30'; return; }
+  try {
+    let parsed = { collected: {}, stock: {}, pending: {} };
+    if (json) {
+      parsed = JSON.parse(json);
+      if (!parsed.collected) { statusEl.textContent = '⚠️ Invalid JSON — needs a "collected" field.'; statusEl.style.color='#ff3b30'; return; }
+    }
+    if (editingFriendIndex >= 0) {
+      friends[editingFriendIndex].name = name;
+      friends[editingFriendIndex].state = parsed;
+    } else {
+      friends.push({ name, state: parsed, expanded: true });
+    }
+    saveFriends();
+    hideFriendForm();
+    renderTrades();
+    // Optional invite
+    const siteUrl = window.location.href.split('?')[0];
+    const msg = `Hey! I'm using this app to track my FIFA World Cup 2026 sticker album 🌍⚽
+
+Check it out: ${siteUrl}
+
+How it works:
+• Tap a sticker once → green ✓ (you have it)
+• Tap again → blue 🤝 (someone has it for you)
+• Press & hold a missing sticker to trade it live with someone
+
+To compare our stickers:
+1. Open the app and tap 📋 (top right) to copy your data
+2. Send it to me so I can add you
+3. I'll send you mine too so you can add me on your end
+
+Your data saves in your browser — tap 💡 Tips in the Album tab for more info!`;
+    document.getElementById('invite-name').textContent = name;
+    document.getElementById('invite-link').href = `sms:?&body=${encodeURIComponent(msg)}`;
+    document.getElementById('invite-prompt').style.display = 'block';
+  } catch(e) {
+    statusEl.textContent = '⚠️ JSON error: ' + e.message;
+    statusEl.style.color = '#ff3b30';
+  }
+}
+
+function showUpdateFriend(i) {
+  editingFriendIndex = i;
+  document.getElementById('friend-form-title').textContent = `Update ${friends[i].name}`;
+  document.getElementById('friend-name-input').value = friends[i].name;
+  document.getElementById('friend-json-input').value = '';
+  document.getElementById('friend-form').style.display = 'block';
+  document.getElementById('add-friend-btn').style.display = 'none';
+}
+
+function buildFriendCard(i) {
+  const friend = friends[i];
+  const fState = friend.state;
+
+  // What they have in stock that I'm missing
+  const theyHaveForMe = [];
+  // What I have in stock that they're missing
+  const iHaveForThem = [];
+
+  for (const sec of ALL_SECTIONS) {
+    for (const id of sec.stickers) {
+      const isCollected = !!state.collected[id];
+      const isPending = !!(state.pending && state.pending[id]);
+      const myMissing = !isCollected && !isPending;
+      const theirStock = (fState.stock && fState.stock[id]) || 0;
+      if (myMissing && theirStock > 0) theyHaveForMe.push({ id, sec, qty: theirStock });
+
+      const myStock = state.stock[id] || 0;
+      const theirMissing = !!(fState.collected) && !fState.collected[id] && !(fState.pending && fState.pending[id]);
+      if (myStock > 0 && theirMissing) iHaveForThem.push({ id, sec, qty: myStock });
+    }
+  }
+
+  const isExpanded = friend.expanded || false;
+  const gc = {'Panini':'#ff9500','FWC':'#5856d6','Group A':'#ff3b30','Group B':'#ff9500','Group C':'#34c759','Group D':'#007aff','Group E':'#af52de','Group F':'#ff2d55','Group G':'#00c7be','Group H':'#ff6b00','Group I':'#30b0c7','Group J':'#32ade6','Group K':'#34c759','Group L':'#a2845e'};
+
+  let html = `<div style="background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);margin-bottom:12px;overflow:hidden;">
+    <div style="padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleFriend(${i})">
+      <div style="width:38px;height:38px;border-radius:50%;background:#e8f4ff;display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;color:#1c1c1e">${friend.name}</div>
+        <div style="font-size:12px;color:#8e8e93;margin-top:2px;">
+          <span style="color:#34c759;font-weight:600">${theyHaveForMe.length} they can give you</span> · 
+          <span style="color:#007aff;font-weight:600">${iHaveForThem.length} you can give them</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="event.stopPropagation();showUpdateFriend(${i})" style="font-size:12px;color:#007aff;background:none;border:none;cursor:pointer;padding:4px 6px;">✏️</button>
+        <button onclick="event.stopPropagation();textReminder('${friend.name.replace(/'/g, "\\'")}')" style="font-size:12px;color:#34c759;background:none;border:none;cursor:pointer;padding:4px 6px;">📱</button>
+        <button onclick="event.stopPropagation();removeFriend(${i})" style="font-size:13px;font-weight:700;color:#ff3b30;background:none;border:none;cursor:pointer;padding:4px 6px;line-height:1;">✕</button>
+        <span style="color:#8e8e93;font-size:14px;">${isExpanded ? '▲' : '▼'}</span>
+      </div>
+    </div>`;
+
+  if (isExpanded) {
+    html += `<div style="border-top:0.5px solid #f2f2f7;padding:12px 14px;">`;
+
+    // They have → I need
+    html += `<div style="font-size:12px;font-weight:700;color:#34c759;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">🟢 They can give you (${theyHaveForMe.length})</div>`;
+    if (theyHaveForMe.length) {
+      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:5px;margin-bottom:14px;">`;
+      for (const item of theyHaveForMe) {
+        const color = gc[item.sec.groupLabel] || '#8e8e93';
+        html += `<div style="border-radius:8px;border:1px solid #34c759;background:#f0fff4;padding:6px 3px 5px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;">
+          <span style="position:absolute;top:2px;right:3px;font-size:8px;font-weight:700;background:#34c759;color:#fff;border-radius:3px;padding:1px 3px;">×${item.qty}</span>
+          <span style="font-size:10px;font-weight:700;color:#248a3d">${item.id.replace(item.sec.prefix,'')}</span>
+          <span style="font-size:9px;font-weight:700;background:${color};color:#fff;border-radius:3px;padding:1px 4px;">${item.sec.prefix}</span>
+        </div>`;
+      }
+      html += `</div>`;
+    } else {
+      html += `<div style="font-size:13px;color:#8e8e93;margin-bottom:14px;">Nothing from them matches your missing stickers.</div>`;
+    }
+
+    // I have → they need
+    html += `<div style="font-size:12px;font-weight:700;color:#007aff;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">🔵 You can give them (${iHaveForThem.length})</div>`;
+    if (iHaveForThem.length) {
+      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:5px;">`;
+      for (const item of iHaveForThem) {
+        const color = gc[item.sec.groupLabel] || '#8e8e93';
+        html += `<div style="border-radius:8px;border:1px solid #007aff;background:#e8f4ff;padding:6px 3px 5px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;">
+          <span style="position:absolute;top:2px;right:3px;font-size:8px;font-weight:700;background:#007aff;color:#fff;border-radius:3px;padding:1px 3px;">×${item.qty}</span>
+          <span style="font-size:10px;font-weight:700;color:#0051a8">${item.id.replace(item.sec.prefix,'')}</span>
+          <span style="font-size:9px;font-weight:700;background:${color};color:#fff;border-radius:3px;padding:1px 4px;">${item.sec.prefix}</span>
+        </div>`;
+      }
+      html += `</div>`;
+    } else {
+      html += `<div style="font-size:13px;color:#8e8e93;">None of your stock matches their missing stickers.</div>`;
+    }
+
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function toggleFriend(i) {
+  friends[i].expanded = !friends[i].expanded;
+  saveFriends();
+  renderTrades();
+}
+
+function removeFriend(i) {
+  friends.splice(i, 1);
+  saveFriends();
+  renderTrades();
+}
+
+function textReminder(name) {
+  const msg = `Hey ${name}! Just a reminder to send me your latest FWC 2026 sticker album backup so I can update our trade comparison 📋⚽\n\nJust open the app, tap 📋 in the top right to copy your data, and send it over!`;
+  window.location.href = `sms:?&body=${encodeURIComponent(msg)}`;
+}
+
+function copyInviteLink() {
+  const siteUrl = window.location.href.split('?')[0];
+  navigator.clipboard.writeText(siteUrl).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = siteUrl;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+  const btn = event.target;
+  btn.textContent = '✓ Copied!';
+  setTimeout(() => btn.textContent = '📋 Copy link', 2000);
+}
+
+function toggleInvTips() {
+  const tips = document.getElementById('inv-tips');
+  const arrow = document.getElementById('inv-tips-arrow');
+  const isOpen = tips.style.display !== 'none';
+  tips.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▼' : '▲';
+}
+
+function toggleTradeTips() {
+  const tips = document.getElementById('trade-tips');
+  const arrow = document.getElementById('trade-tips-arrow');
+  const isOpen = tips.style.display !== 'none';
+  tips.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▼' : '▲';
+}
+
+function toggleAlbumTips() {
+  const tips = document.getElementById('album-tips');
+  const arrow = document.getElementById('tips-arrow');
+  const isOpen = tips.style.display !== 'none';
+  tips.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▼' : '▲';
+}
+
+function dismissTips() {
+  document.getElementById('tips-overlay').style.display = 'none';
+  localStorage.setItem('wc2026_tips_seen', '1');
+}
+
+function showTipsIfFirstVisit() {
+  if (!localStorage.getItem('wc2026_tips_seen')) {
+    document.getElementById('tips-overlay').style.display = 'flex';
+  }
+}
+
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+if (isIOS && !window.navigator.standalone) document.getElementById('install-banner').classList.add('show');
+
+loadFriends();
+loadState();
+showTipsIfFirstVisit();
+</script>
+</body>
+</html>
