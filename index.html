@@ -164,6 +164,9 @@
       <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
       <div class="progress-label" id="progress-label">0% complete</div>
     </div>
+    <div style="padding:8px 16px 12px;">
+      <button onclick="shareMissingList()" style="width:100%;padding:9px 14px;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">⬆️ Share my missing list (text form)</button>
+    </div>
   </div>
 
   <div class="tab-bar">
@@ -250,7 +253,8 @@
         <option value="blue">Blue 🤝</option>
       </select>
     </div>
-    <div id="album-filter-counts" style="display:flex;gap:8px;padding:0 16px 10px;"></div>
+    <div id="album-filter-counts" style="display:flex;gap:8px;padding:0 16px 10px;flex-wrap:wrap;align-items:center;">
+    </div>
     <div class="album-content" id="album-content"></div>
   </div>
   <div id="view-stock" style="display:none">
@@ -1296,6 +1300,7 @@ function buildFriendCard(i) {
       <div style="display:flex;gap:8px;align-items:center;">
         <button onclick="event.stopPropagation();showUpdateFriend(${i})" style="font-size:12px;color:#007aff;background:none;border:none;cursor:pointer;padding:4px 6px;">✏️</button>
         <button onclick="event.stopPropagation();textReminder('${friend.name.replace(/'/g, "\\'")}')" style="font-size:12px;color:#34c759;background:none;border:none;cursor:pointer;padding:4px 6px;">📱</button>
+        <button onclick="event.stopPropagation();shareTradeSummary(${i})" style="font-size:12px;color:#ff9500;background:none;border:none;cursor:pointer;padding:4px 6px;">⬆️</button>
         <button onclick="event.stopPropagation();removeFriend(${i})" style="font-size:13px;font-weight:700;color:#ff3b30;background:none;border:none;cursor:pointer;padding:4px 6px;line-height:1;">✕</button>
         <span style="color:#8e8e93;font-size:14px;">${isExpanded ? '▲' : '▼'}</span>
       </div>
@@ -1355,6 +1360,75 @@ function removeFriend(i) {
   friends.splice(i, 1);
   saveFriends();
   renderTrades();
+}
+
+function getTeamFlag(prefix) {
+  const sec = ALL_SECTIONS.find(s => s.prefix === prefix);
+  return sec ? sec.flag : '';
+}
+
+function formatStickersByTeam(ids) {
+  const byTeam = {};
+  for (const id of ids) {
+    const sec = ALL_SECTIONS.find(s => s.stickers.includes(id));
+    if (!sec) continue;
+    if (!byTeam[sec.prefix]) byTeam[sec.prefix] = { section: sec.section, flag: sec.flag, nums: [] };
+    byTeam[sec.prefix].nums.push(id.replace(sec.prefix, ''));
+  }
+  let lines = [];
+  for (const prefix of Object.keys(byTeam)) {
+    const t = byTeam[prefix];
+    const flag = t.flag.length <= 2 && t.flag !== '🏆' && t.flag !== '⭐' ? t.flag : t.flag;
+    lines.push(`${prefix} ${flag}: ${t.nums.join(', ')}`);
+  }
+  return lines.join('\n');
+}
+
+function shareMissingList() {
+  const missing = [];
+  for (const sec of ALL_SECTIONS) {
+    for (const id of sec.stickers) {
+      if (!state.collected[id] && !(state.pending && state.pending[id])) {
+        missing.push(id);
+      }
+    }
+  }
+  if (!missing.length) {
+    alert('You have no missing stickers!');
+    return;
+  }
+  const siteUrl = window.location.href.split('?')[0];
+  const text = `📋 My missing stickers — FWC 2026 Album\n\nI need:\n${formatStickersByTeam(missing)}\n\nTrack your album: ${siteUrl}`;
+  window.location.href = `sms:?&body=${encodeURIComponent(text)}`;
+}
+
+function shareTradeSummary(i) {
+  const friend = friends[i];
+  const fState = friend.state;
+  const theyHaveForMe = [];
+  const iHaveForThem = [];
+  for (const sec of ALL_SECTIONS) {
+    for (const id of sec.stickers) {
+      const isCollected = !!state.collected[id];
+      const isPending = !!(state.pending && state.pending[id]);
+      if (!isCollected && !isPending && (fState.stock && fState.stock[id])) theyHaveForMe.push(id);
+      if ((state.stock[id] || 0) > 0 && fState.collected && !fState.collected[id] && !(fState.pending && fState.pending[id])) iHaveForThem.push(id);
+    }
+  }
+  const siteUrl = window.location.href.split('?')[0];
+  let text = `🤝 Trade summary with ${friend.name} — FWC 2026\n\n`;
+  if (theyHaveForMe.length) {
+    text += `What I need from you (${theyHaveForMe.length}):\n${formatStickersByTeam(theyHaveForMe)}\n\n`;
+  } else {
+    text += `What I need from you: nothing right now!\n\n`;
+  }
+  if (iHaveForThem.length) {
+    text += `What you need from me (${iHaveForThem.length}):\n${formatStickersByTeam(iHaveForThem)}\n\n`;
+  } else {
+    text += `What you need from me: nothing right now!\n\n`;
+  }
+  text += `Track your album: ${siteUrl}`;
+  window.location.href = `sms:?&body=${encodeURIComponent(text)}`;
 }
 
 function textReminder(name) {
